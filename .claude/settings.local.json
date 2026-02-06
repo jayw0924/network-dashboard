@@ -16,7 +16,8 @@
       "Bash(sudo journalctl:*)",
       "Bash(sudo fuser:*)",
       "Bash(sudo systemctl restart:*)",
-      "Bash(sudo systemctl status:*)"
+      "Bash(sudo systemctl status:*)",
+      "Bash(venv/bin/python:*)"
     ]
   }
 }

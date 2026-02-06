@@ -9,6 +9,7 @@ from flask import Flask, jsonify, render_template, request
 
 import database as db
 from bandwidth import BandwidthMonitor
+from latency import EXTERNAL_TARGETS, LatencyMonitor
 from scanner import NetworkScanner
 
 app = Flask(__name__)
@@ -18,6 +19,7 @@ SUBNET = os.environ.get("SUBNET", "192.168.12.0/24")
 
 scanner = NetworkScanner()
 bw_monitor = BandwidthMonitor()
+latency_monitor = LatencyMonitor()
 scan_in_progress = False
 portscan_semaphore = threading.Semaphore(1)
 portscan_active = {}  # ip -> bool, tracks which IPs are being scanned
@@ -83,6 +85,34 @@ def bandwidth_loop():
             db.prune_bandwidth(hours=24)
             prune_counter = 0
         time.sleep(5)
+
+
+def latency_loop():
+    """Background thread that pings all online devices + external targets every 10 seconds."""
+    prune_counter = 0
+    while True:
+        try:
+            statuses = db.get_device_statuses()
+            lan_ips = [ip for ip, status in statuses.items() if status == "online"]
+            all_targets = lan_ips + EXTERNAL_TARGETS
+            external_set = set(EXTERNAL_TARGETS)
+
+            if all_targets:
+                results = latency_monitor.ping_all(all_targets)
+                ts = datetime.now().isoformat()
+                samples = [
+                    (ts, ip, data["rtt_ms"], 1 if ip in external_set else 0)
+                    for ip, data in results.items()
+                ]
+                db.add_latency_samples(samples)
+        except Exception as e:
+            print(f"Latency loop error: {e}")
+
+        prune_counter += 1
+        if prune_counter >= 360:  # Prune every hour (360 * 10s)
+            db.prune_latency(hours=24)
+            prune_counter = 0
+        time.sleep(10)
 
 
 def get_gateway():
@@ -202,8 +232,25 @@ def api_topology():
     return jsonify({"nodes": nodes, "edges": edges, "gateway": gateway})
 
 
+@app.route("/api/latency")
+def api_latency():
+    ip = request.args.get("ip")
+    if not ip:
+        return jsonify({"error": "ip parameter required"}), 400
+    minutes = int(request.args.get("minutes", 60))
+    history = db.get_latency_history(ip, minutes=minutes)
+    return jsonify({"ip": ip, "history": history})
+
+
+@app.route("/api/latency/summary")
+def api_latency_summary():
+    summary = db.get_latency_summary()
+    return jsonify({"targets": summary})
+
+
 if __name__ == "__main__":
     db.init_db()
     threading.Thread(target=scan_loop, daemon=True).start()
     threading.Thread(target=bandwidth_loop, daemon=True).start()
+    threading.Thread(target=latency_loop, daemon=True).start()
     app.run(host="0.0.0.0", port=5000, debug=False)

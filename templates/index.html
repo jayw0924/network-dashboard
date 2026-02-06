@@ -3,185 +3,264 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Network Dashboard</title>
+    <title>netdash // network monitor</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #1a1a2e;
-            color: #e0e0e0;
+            font-family: 'Consolas', 'Fira Code', 'Source Code Pro', 'JetBrains Mono', monospace;
+            background: #0a0a0a;
+            color: #b0b0b0;
             min-height: 100vh;
+            font-size: 13px;
+            line-height: 1.5;
         }
         header {
-            background: #16213e;
-            padding: 1rem 2rem;
+            background: #111111;
+            padding: 0.8rem 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid #0f3460;
+            border-bottom: 1px solid #222;
         }
-        header h1 { font-size: 1.4rem; color: #e94560; }
+        header h1 {
+            font-size: 1.1rem; color: #00cc66; font-weight: 500;
+            letter-spacing: 2px; text-transform: uppercase;
+        }
+        header h1::before { content: "> "; color: #555; }
         .summary { display: flex; gap: 2rem; align-items: center; }
         .stat { text-align: center; }
-        .stat .value { font-size: 1.5rem; font-weight: bold; color: #e94560; }
-        .stat .label { font-size: 0.75rem; color: #888; text-transform: uppercase; }
-        .scan-btn {
-            background: #e94560; color: #fff; border: none;
-            padding: 0.5rem 1.2rem; border-radius: 4px; cursor: pointer;
-            font-size: 0.9rem; transition: background 0.2s;
+        .stat .value { font-size: 1.4rem; font-weight: bold; color: #00cc66; }
+        .stat .label {
+            font-size: 0.65rem; color: #555; text-transform: uppercase;
+            letter-spacing: 1.5px;
         }
-        .scan-btn:hover { background: #c73650; }
-        .scan-btn:disabled { background: #555; cursor: not-allowed; }
+        .scan-btn {
+            background: transparent; color: #00cc66; border: 1px solid #00cc66;
+            padding: 0.4rem 1.2rem; border-radius: 2px; cursor: pointer;
+            font-family: inherit; font-size: 0.8rem; text-transform: uppercase;
+            letter-spacing: 1px; transition: all 0.15s;
+        }
+        .scan-btn:hover { background: #00cc66; color: #0a0a0a; }
+        .scan-btn:disabled { border-color: #333; color: #333; background: transparent; cursor: not-allowed; }
 
         /* Tabs */
         .tabs {
-            display: flex; background: #16213e;
-            border-bottom: 2px solid #0f3460;
+            display: flex; background: #0e0e0e;
+            border-bottom: 1px solid #222;
             padding: 0 2rem;
         }
         .tab {
-            padding: 0.7rem 1.5rem; cursor: pointer;
-            color: #888; font-size: 0.9rem; border-bottom: 2px solid transparent;
-            margin-bottom: -2px; transition: all 0.2s; user-select: none;
+            padding: 0.6rem 1.5rem; cursor: pointer;
+            color: #555; font-size: 0.8rem; border-bottom: 1px solid transparent;
+            margin-bottom: -1px; transition: all 0.15s; user-select: none;
+            text-transform: uppercase; letter-spacing: 1px;
         }
-        .tab:hover { color: #e0e0e0; }
-        .tab.active { color: #e94560; border-bottom-color: #e94560; }
+        .tab:hover { color: #888; }
+        .tab.active { color: #00cc66; border-bottom-color: #00cc66; }
         .tab-content { display: none; padding: 1.5rem 2rem; }
         .tab-content.active { display: block; }
 
         .scanning-bar {
-            background: #0f3460; padding: 0.5rem 1rem; border-radius: 4px;
+            background: #111; padding: 0.5rem 1rem; border-radius: 2px;
             margin-bottom: 1rem; display: none; animation: pulse 1.5s infinite;
+            border-left: 2px solid #cc8800; color: #cc8800; font-size: 0.8rem;
         }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
         /* Device table */
         table {
             width: 100%; border-collapse: collapse;
-            background: #16213e; border-radius: 8px; overflow: hidden;
+            background: transparent;
         }
         th, td {
-            padding: 0.7rem 1rem; text-align: left;
-            border-bottom: 1px solid #0f3460;
+            padding: 0.5rem 1rem; text-align: left;
+            border-bottom: 1px solid #1a1a1a;
         }
         th {
-            background: #0f3460; cursor: pointer; user-select: none;
-            white-space: nowrap; font-size: 0.85rem;
-            text-transform: uppercase; letter-spacing: 0.5px;
+            background: #0e0e0e; cursor: pointer; user-select: none;
+            white-space: nowrap; font-size: 0.7rem; color: #555;
+            text-transform: uppercase; letter-spacing: 1.5px;
+            font-weight: 500; border-bottom: 1px solid #222;
         }
-        th:hover { background: #1a4080; }
-        th .arrow { margin-left: 4px; font-size: 0.7rem; }
-        tr:hover td { background: #1a2744; }
+        th:hover { color: #888; }
+        th .arrow { margin-left: 4px; font-size: 0.6rem; color: #00cc66; }
+        tr:hover td { background: #111; }
         .status-dot {
-            display: inline-block; width: 10px; height: 10px;
-            border-radius: 50%; margin-right: 6px; vertical-align: middle;
+            display: inline-block; width: 6px; height: 6px;
+            border-radius: 50%; margin-right: 8px; vertical-align: middle;
         }
-        .status-online { background: #4caf50; box-shadow: 0 0 6px #4caf5088; }
-        .status-offline { background: #f44336; box-shadow: 0 0 6px #f4433688; }
-        .empty-msg { text-align: center; padding: 3rem; color: #666; }
+        .status-online { background: #00cc66; box-shadow: 0 0 4px #00cc6666; }
+        .status-offline { background: #cc3333; box-shadow: 0 0 4px #cc333366; }
+        .empty-msg { text-align: center; padding: 3rem; color: #333; }
 
         /* Port badge & button */
         .port-badge {
-            background: #0f3460; color: #4caf50; padding: 2px 8px;
-            border-radius: 10px; font-size: 0.8rem; cursor: pointer;
+            background: transparent; color: #00cc66; padding: 1px 6px;
+            border: 1px solid #1a3a1a; border-radius: 2px;
+            font-size: 0.75rem; cursor: pointer; font-family: inherit;
         }
-        .port-badge:hover { background: #1a4080; }
+        .port-badge:hover { border-color: #00cc66; }
         .port-scan-btn {
-            background: transparent; border: 1px solid #555; color: #888;
-            padding: 2px 8px; border-radius: 10px; font-size: 0.75rem;
-            cursor: pointer;
+            background: transparent; border: 1px solid #222; color: #444;
+            padding: 1px 6px; border-radius: 2px; font-size: 0.7rem;
+            cursor: pointer; font-family: inherit; text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        .port-scan-btn:hover { border-color: #e94560; color: #e94560; }
-        .port-scanning { color: #e9a045; font-size: 0.8rem; }
+        .port-scan-btn:hover { border-color: #00cc66; color: #00cc66; }
+        .port-scanning { color: #cc8800; font-size: 0.75rem; }
 
         /* Modal */
         .modal-overlay {
             display: none; position: fixed; top: 0; left: 0;
-            width: 100%; height: 100%; background: rgba(0,0,0,0.7);
+            width: 100%; height: 100%; background: rgba(0,0,0,0.85);
             z-index: 1000; justify-content: center; align-items: center;
         }
         .modal-overlay.show { display: flex; }
         .modal {
-            background: #16213e; border-radius: 8px; padding: 1.5rem;
+            background: #111; border-radius: 2px; padding: 1.5rem;
             max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;
-            border: 1px solid #0f3460;
+            border: 1px solid #222;
         }
-        .modal h2 { color: #e94560; margin-bottom: 1rem; font-size: 1.1rem; }
-        .modal table { font-size: 0.85rem; }
+        .modal h2 { color: #00cc66; margin-bottom: 1rem; font-size: 0.95rem; font-weight: 500; }
+        .modal table { font-size: 0.8rem; }
         .modal-close {
             float: right; background: none; border: none;
-            color: #888; font-size: 1.3rem; cursor: pointer;
+            color: #444; font-size: 1.2rem; cursor: pointer; font-family: inherit;
         }
-        .modal-close:hover { color: #e94560; }
+        .modal-close:hover { color: #cc3333; }
 
         /* Bandwidth */
         .bw-current {
-            display: flex; gap: 3rem; margin-bottom: 1.5rem;
+            display: flex; gap: 4rem; margin-bottom: 1.5rem;
             justify-content: center;
         }
         .bw-stat { text-align: center; }
-        .bw-stat .bw-value { font-size: 2rem; font-weight: bold; }
-        .bw-stat .bw-label { font-size: 0.8rem; color: #888; text-transform: uppercase; }
-        .bw-rx .bw-value { color: #4caf50; }
-        .bw-tx .bw-value { color: #42a5f5; }
+        .bw-stat .bw-value { font-size: 1.8rem; font-weight: bold; }
+        .bw-stat .bw-label {
+            font-size: 0.65rem; color: #444; text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .bw-rx .bw-value { color: #00cc66; }
+        .bw-tx .bw-value { color: #0088cc; }
         .time-btns { display: flex; gap: 0.5rem; margin-bottom: 1rem; justify-content: center; }
         .time-btn {
-            background: #0f3460; color: #888; border: none;
-            padding: 0.4rem 1rem; border-radius: 4px; cursor: pointer;
+            background: transparent; color: #444; border: 1px solid #222;
+            padding: 0.3rem 1rem; border-radius: 2px; cursor: pointer;
+            font-family: inherit; font-size: 0.75rem;
         }
-        .time-btn:hover, .time-btn.active { background: #e94560; color: #fff; }
-        #bw-chart-container { background: #16213e; border-radius: 8px; padding: 1rem; }
+        .time-btn:hover { border-color: #555; color: #888; }
+        .time-btn.active { border-color: #00cc66; color: #00cc66; }
+        #bw-chart-container { background: #0e0e0e; border-radius: 2px; padding: 1rem; border: 1px solid #1a1a1a; }
 
         /* Network graph */
         #network-graph {
-            width: 100%; height: 500px; background: #16213e;
-            border-radius: 8px; border: 1px solid #0f3460;
+            width: 100%; height: 500px; background: #0e0e0e;
+            border-radius: 2px; border: 1px solid #1a1a1a;
         }
 
         /* History timeline */
-        .history-controls { margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: center; }
+        .history-controls {
+            margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: center;
+            font-size: 0.8rem; color: #555;
+        }
         .history-controls select {
-            background: #0f3460; color: #e0e0e0; border: 1px solid #1a4080;
-            padding: 0.4rem 0.8rem; border-radius: 4px;
+            background: #111; color: #b0b0b0; border: 1px solid #222;
+            padding: 0.4rem 0.8rem; border-radius: 2px; font-family: inherit;
+            font-size: 0.8rem;
         }
         .timeline { position: relative; padding-left: 30px; }
         .timeline::before {
             content: ''; position: absolute; left: 10px; top: 0;
-            bottom: 0; width: 2px; background: #0f3460;
+            bottom: 0; width: 1px; background: #1a1a1a;
         }
         .timeline-item {
-            position: relative; margin-bottom: 1rem;
-            padding: 0.8rem 1rem; background: #16213e;
-            border-radius: 6px; border: 1px solid #0f3460;
+            position: relative; margin-bottom: 0.8rem;
+            padding: 0.6rem 1rem; background: #0e0e0e;
+            border-radius: 2px; border: 1px solid #1a1a1a;
         }
         .timeline-item::before {
-            content: ''; position: absolute; left: -24px; top: 1rem;
-            width: 10px; height: 10px; border-radius: 50%;
+            content: ''; position: absolute; left: -24px; top: 0.9rem;
+            width: 7px; height: 7px; border-radius: 50%;
         }
-        .timeline-item.connected::before { background: #4caf50; box-shadow: 0 0 6px #4caf5088; }
-        .timeline-item.disconnected::before { background: #f44336; box-shadow: 0 0 6px #f4433688; }
-        .timeline-item .ev-time { color: #888; font-size: 0.8rem; }
-        .timeline-item .ev-desc { margin-top: 0.3rem; }
-        .timeline-item .ev-ip { color: #e94560; }
+        .timeline-item.connected::before { background: #00cc66; box-shadow: 0 0 4px #00cc6666; }
+        .timeline-item.disconnected::before { background: #cc3333; box-shadow: 0 0 4px #cc333366; }
+        .timeline-item .ev-time { color: #444; font-size: 0.75rem; }
+        .timeline-item .ev-desc { margin-top: 0.2rem; font-size: 0.85rem; }
+        .timeline-item .ev-ip { color: #00cc66; }
         .load-more-btn {
-            display: block; margin: 1rem auto; background: #0f3460;
-            color: #e0e0e0; border: none; padding: 0.5rem 2rem;
-            border-radius: 4px; cursor: pointer;
+            display: block; margin: 1rem auto; background: transparent;
+            color: #555; border: 1px solid #222; padding: 0.4rem 2rem;
+            border-radius: 2px; cursor: pointer; font-family: inherit;
+            font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px;
         }
-        .load-more-btn:hover { background: #1a4080; }
+        .load-more-btn:hover { border-color: #555; color: #888; }
+
+        /* Latency */
+        .lat-section-label {
+            font-size: 0.7rem; color: #444; text-transform: uppercase;
+            letter-spacing: 2px; margin: 1.5rem 0 0.8rem; padding-bottom: 0.3rem;
+            border-bottom: 1px solid #1a1a1a;
+        }
+        .lat-section-label:first-child { margin-top: 0; }
+        .inet-health { display: flex; gap: 1.5rem; margin-bottom: 1rem; }
+        .inet-box {
+            flex: 1; background: #0e0e0e; border: 1px solid #1a1a1a;
+            border-radius: 2px; padding: 1rem; text-align: center; position: relative;
+        }
+        .inet-indicator {
+            width: 8px; height: 8px; border-radius: 50%; position: absolute;
+            top: 0.8rem; right: 0.8rem; background: #333;
+        }
+        .inet-indicator.good { background: #00cc66; box-shadow: 0 0 6px #00cc6644; }
+        .inet-indicator.warn { background: #cc8800; box-shadow: 0 0 6px #cc880044; }
+        .inet-indicator.bad { background: #cc3333; box-shadow: 0 0 6px #cc333344; }
+        .inet-label { font-size: 0.8rem; color: #888; margin-bottom: 0.2rem; }
+        .inet-ip { font-size: 0.7rem; color: #444; margin-bottom: 0.5rem; }
+        .inet-rtt { font-size: 1.6rem; font-weight: bold; color: #00cc66; }
+        .inet-rtt.warn { color: #cc8800; }
+        .inet-rtt.bad { color: #cc3333; }
+        .inet-loss { font-size: 0.7rem; color: #444; margin-top: 0.3rem; }
+        .inet-loss.has-loss { color: #cc3333; }
+        .lat-table { margin-bottom: 1rem; }
+        .lat-table tbody tr { cursor: pointer; }
+        .lat-table tbody tr:hover td { background: #151515; }
+        .lat-table tbody tr.selected td { background: #0a1a0a; border-color: #1a3a1a; }
+        .lat-rtt-good { color: #00cc66; }
+        .lat-rtt-warn { color: #cc8800; }
+        .lat-rtt-bad { color: #cc3333; }
+        .lat-sparkline { display: inline-flex; align-items: end; gap: 1px; height: 18px; }
+        .lat-sparkline .lat-spark-bar {
+            width: 3px; background: #00cc66; border-radius: 1px 1px 0 0; min-height: 1px;
+        }
+        .lat-sparkline .lat-spark-bar.loss { background: #cc3333; }
+        .lat-detail-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 0.8rem;
+        }
+        #lat-detail-ip { font-size: 0.85rem; color: #555; }
+        #lat-chart-container {
+            background: #0e0e0e; border-radius: 2px; padding: 1rem;
+            border: 1px solid #1a1a1a;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0a0a0a; }
+        ::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #333; }
 
         @media (max-width: 768px) {
             header { flex-direction: column; gap: 0.8rem; }
             .tabs { padding: 0 1rem; overflow-x: auto; }
-            .tab { padding: 0.6rem 1rem; font-size: 0.8rem; white-space: nowrap; }
+            .tab { padding: 0.5rem 1rem; font-size: 0.7rem; white-space: nowrap; }
             .tab-content { padding: 1rem; }
-            th, td { padding: 0.5rem; font-size: 0.85rem; }
+            th, td { padding: 0.4rem 0.5rem; font-size: 0.8rem; }
         }
     </style>
 </head>
 <body>
     <header>
-        <h1>Network Dashboard</h1>
+        <h1>netdash</h1>
         <div class="summary">
             <div class="stat">
                 <div class="value" id="total-count">0</div>
@@ -195,20 +274,21 @@
                 <div class="value" id="offline-count">0</div>
                 <div class="label">Offline</div>
             </div>
-            <button class="scan-btn" id="scan-btn" onclick="triggerScan()">Scan Now</button>
+            <button class="scan-btn" id="scan-btn" onclick="triggerScan()">scan</button>
         </div>
     </header>
 
     <div class="tabs">
-        <div class="tab active" data-tab="devices">Devices</div>
-        <div class="tab" data-tab="netmap">Network Map</div>
-        <div class="tab" data-tab="bandwidth">Bandwidth</div>
-        <div class="tab" data-tab="history">History</div>
+        <div class="tab active" data-tab="devices">devices</div>
+        <div class="tab" data-tab="netmap">topology</div>
+        <div class="tab" data-tab="bandwidth">bandwidth</div>
+        <div class="tab" data-tab="latency">latency</div>
+        <div class="tab" data-tab="history">events</div>
     </div>
 
     <!-- Devices Tab -->
     <div class="tab-content active" id="tab-devices">
-        <div class="scanning-bar" id="scanning-bar">Scanning network...</div>
+        <div class="scanning-bar" id="scanning-bar">scanning network...</div>
         <table>
             <thead>
                 <tr>
@@ -223,7 +303,7 @@
             </thead>
             <tbody id="device-table"></tbody>
         </table>
-        <div class="empty-msg" id="empty-msg">Waiting for first scan...</div>
+        <div class="empty-msg" id="empty-msg">awaiting initial scan...</div>
     </div>
 
     <!-- Network Map Tab -->
@@ -236,11 +316,11 @@
         <div class="bw-current">
             <div class="bw-stat bw-rx">
                 <div class="bw-value" id="bw-rx-val">--</div>
-                <div class="bw-label">Download</div>
+                <div class="bw-label">rx (down)</div>
             </div>
             <div class="bw-stat bw-tx">
                 <div class="bw-value" id="bw-tx-val">--</div>
-                <div class="bw-label">Upload</div>
+                <div class="bw-label">tx (up)</div>
             </div>
         </div>
         <div class="time-btns">
@@ -254,6 +334,62 @@
         </div>
     </div>
 
+    <!-- Latency Tab -->
+    <div class="tab-content" id="tab-latency">
+        <div class="lat-section-label">internet health</div>
+        <div class="inet-health">
+            <div class="inet-box" id="inet-1.1.1.1">
+                <div class="inet-indicator"></div>
+                <div class="inet-label">Cloudflare</div>
+                <div class="inet-ip">1.1.1.1</div>
+                <div class="inet-rtt">--</div>
+                <div class="inet-loss">0% loss</div>
+            </div>
+            <div class="inet-box" id="inet-8.8.8.8">
+                <div class="inet-indicator"></div>
+                <div class="inet-label">Google DNS</div>
+                <div class="inet-ip">8.8.8.8</div>
+                <div class="inet-rtt">--</div>
+                <div class="inet-loss">0% loss</div>
+            </div>
+            <div class="inet-box" id="inet-1.0.0.1">
+                <div class="inet-indicator"></div>
+                <div class="inet-label">Cloudflare 2</div>
+                <div class="inet-ip">1.0.0.1</div>
+                <div class="inet-rtt">--</div>
+                <div class="inet-loss">0% loss</div>
+            </div>
+        </div>
+
+        <div class="lat-section-label">device latency</div>
+        <table class="lat-table">
+            <thead>
+                <tr>
+                    <th data-latcol="ip" data-type="ip">IP Address <span class="arrow"></span></th>
+                    <th data-latcol="hostname" data-type="string">Hostname <span class="arrow"></span></th>
+                    <th data-latcol="latest_rtt" data-type="number">RTT (ms) <span class="arrow"></span></th>
+                    <th data-latcol="loss_pct" data-type="number">Loss % <span class="arrow"></span></th>
+                    <th>Trend</th>
+                </tr>
+            </thead>
+            <tbody id="lat-device-table"></tbody>
+        </table>
+
+        <div class="lat-section-label">latency detail</div>
+        <div class="lat-detail-header">
+            <span id="lat-detail-ip">select a device above</span>
+            <div class="time-btns lat-time-btns">
+                <button class="time-btn lat-time-btn" data-latmin="5">5m</button>
+                <button class="time-btn lat-time-btn" data-latmin="15">15m</button>
+                <button class="time-btn lat-time-btn active" data-latmin="60">1h</button>
+                <button class="time-btn lat-time-btn" data-latmin="1440">24h</button>
+            </div>
+        </div>
+        <div id="lat-chart-container">
+            <canvas id="lat-chart"></canvas>
+        </div>
+    </div>
+
     <!-- History Tab -->
     <div class="tab-content" id="tab-history">
         <div class="history-controls">
@@ -263,7 +399,7 @@
             </select>
         </div>
         <div class="timeline" id="timeline"></div>
-        <button class="load-more-btn" id="load-more-btn" onclick="loadMoreHistory()">Load more</button>
+        <button class="load-more-btn" id="load-more-btn" onclick="loadMoreHistory()">load more</button>
     </div>
 
     <!-- Port Details Modal -->
@@ -300,6 +436,7 @@
 
             if (tab.dataset.tab === "netmap") initGraph();
             if (tab.dataset.tab === "bandwidth") initBandwidth();
+            if (tab.dataset.tab === "latency") initLatency();
             if (tab.dataset.tab === "history") { historyOffset = 0; loadHistory(true); }
         });
     });
@@ -455,7 +592,7 @@
             </tr>`).join("");
             html += `</tbody></table>`;
         }
-        html += `<br><button class="scan-btn" onclick="closePortModal(); startPortScan('${escapeHtml(ip)}')">Re-scan</button>`;
+        html += `<br><button class="scan-btn" onclick="closePortModal(); startPortScan('${escapeHtml(ip)}')">rescan</button>`;
         document.getElementById("modal-body").innerHTML = html;
         document.getElementById("port-modal").classList.add("show");
     }
@@ -481,8 +618,8 @@
                 data: {
                     labels: [],
                     datasets: [
-                        { label: "Download", data: [], borderColor: "#4caf50", backgroundColor: "rgba(76,175,80,0.1)", fill: true, tension: 0.3, pointRadius: 0 },
-                        { label: "Upload", data: [], borderColor: "#42a5f5", backgroundColor: "rgba(66,165,245,0.1)", fill: true, tension: 0.3, pointRadius: 0 }
+                        { label: "RX", data: [], borderColor: "#00cc66", backgroundColor: "rgba(0,204,102,0.05)", fill: true, tension: 0.2, pointRadius: 0, borderWidth: 1.5 },
+                        { label: "TX", data: [], borderColor: "#0088cc", backgroundColor: "rgba(0,136,204,0.05)", fill: true, tension: 0.2, pointRadius: 0, borderWidth: 1.5 }
                     ]
                 },
                 options: {
@@ -490,17 +627,18 @@
                     animation: false,
                     interaction: { intersect: false, mode: "index" },
                     scales: {
-                        x: { ticks: { color: "#888", maxTicksLimit: 10 }, grid: { color: "#0f3460" } },
+                        x: { ticks: { color: "#333", maxTicksLimit: 10, font: { family: "Consolas, monospace", size: 10 } }, grid: { color: "#1a1a1a" } },
                         y: {
                             ticks: {
-                                color: "#888",
-                                callback: v => formatBytes(v)
+                                color: "#333",
+                                callback: v => formatBytes(v),
+                                font: { family: "Consolas, monospace", size: 10 }
                             },
-                            grid: { color: "#0f3460" }
+                            grid: { color: "#1a1a1a" }
                         }
                     },
                     plugins: {
-                        legend: { labels: { color: "#e0e0e0" } },
+                        legend: { labels: { color: "#555", font: { family: "Consolas, monospace", size: 11 } } },
                         tooltip: {
                             callbacks: { label: ctx => ctx.dataset.label + ": " + formatBytes(ctx.raw) }
                         }
@@ -555,11 +693,11 @@
             const options = {
                 physics: { stabilization: { iterations: 100 }, barnesHut: { gravitationalConstant: -3000 } },
                 groups: {
-                    router: { shape: "diamond", color: { background: "#ffd700", border: "#daa520" }, size: 30, font: { color: "#e0e0e0", size: 12 } },
-                    online: { shape: "dot", color: { background: "#4caf50", border: "#388e3c" }, size: 15, font: { color: "#e0e0e0", size: 11 } },
-                    offline: { shape: "dot", color: { background: "#f44336", border: "#c62828" }, size: 12, font: { color: "#666", size: 11 }, opacity: 0.5 }
+                    router: { shape: "diamond", color: { background: "#cc8800", border: "#996600" }, size: 30, font: { color: "#888", size: 11, face: "Consolas, monospace" } },
+                    online: { shape: "dot", color: { background: "#00cc66", border: "#009944" }, size: 12, font: { color: "#666", size: 10, face: "Consolas, monospace" } },
+                    offline: { shape: "dot", color: { background: "#cc3333", border: "#991111" }, size: 8, font: { color: "#333", size: 10, face: "Consolas, monospace" }, opacity: 0.4 }
                 },
-                edges: { color: { color: "#0f3460", highlight: "#e94560" }, width: 1 },
+                edges: { color: { color: "#1a1a1a", highlight: "#00cc66" }, width: 1 },
                 interaction: { hover: true }
             };
             graphNetwork = new vis.Network(container, data, options);
@@ -661,6 +799,235 @@
     }
 
     document.getElementById("history-filter").addEventListener("change", () => loadHistory(true));
+
+    // --- Latency ---
+    let latChart = null;
+    let latSelectedIp = null;
+    let latMinutes = 60;
+    let latInterval = null;
+    let latSortCol = "ip";
+    let latSortAsc = true;
+    let latSummaryCache = [];
+    let latSparklines = {};  // ip -> array of last 20 rtt values
+
+    function initLatency() {
+        fetchLatencySummary();
+        if (latInterval) clearInterval(latInterval);
+        latInterval = setInterval(fetchLatencySummary, 10000);
+        ensureLatChart();
+    }
+
+    function ensureLatChart() {
+        if (latChart) return;
+        // Chart.js may already be loaded by bandwidth tab
+        if (typeof Chart !== "undefined") {
+            createLatChart();
+        } else {
+            const script = document.createElement("script");
+            script.src = "https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js";
+            script.onload = createLatChart;
+            document.head.appendChild(script);
+        }
+    }
+
+    function createLatChart() {
+        if (latChart) return;
+        const ctx = document.getElementById("lat-chart").getContext("2d");
+        latChart = new Chart(ctx, {
+            type: "line",
+            data: {
+                labels: [],
+                datasets: [{
+                    label: "RTT (ms)",
+                    data: [],
+                    borderColor: "#00cc66",
+                    backgroundColor: "rgba(0,204,102,0.05)",
+                    fill: true, tension: 0.2, pointRadius: 2,
+                    pointBackgroundColor: [], borderWidth: 1.5
+                }]
+            },
+            options: {
+                responsive: true, animation: false,
+                interaction: { intersect: false, mode: "index" },
+                scales: {
+                    x: {
+                        ticks: { color: "#333", maxTicksLimit: 10, font: { family: "Consolas, monospace", size: 10 } },
+                        grid: { color: "#1a1a1a" }
+                    },
+                    y: {
+                        title: { display: true, text: "ms", color: "#444", font: { family: "Consolas, monospace", size: 10 } },
+                        ticks: { color: "#333", font: { family: "Consolas, monospace", size: 10 } },
+                        grid: { color: "#1a1a1a" },
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: "#555", font: { family: "Consolas, monospace", size: 11 } } },
+                    tooltip: { callbacks: { label: ctx => ctx.raw !== null ? ctx.raw.toFixed(1) + " ms" : "packet lost" } }
+                }
+            }
+        });
+    }
+
+    async function fetchLatencySummary() {
+        try {
+            const resp = await fetch("/api/latency/summary");
+            const data = await resp.json();
+            latSummaryCache = data.targets || [];
+            renderInternetHealth();
+            renderLatDeviceTable();
+            if (latSelectedIp) fetchLatencyDetail();
+        } catch (e) { console.error("Latency summary error:", e); }
+    }
+
+    function rttClass(rtt, lossPct) {
+        if (rtt === null || rtt === undefined || lossPct > 50) return "bad";
+        if (rtt > 150 || lossPct > 10) return "bad";
+        if (rtt > 50) return "warn";
+        return "good";
+    }
+
+    function renderInternetHealth() {
+        const externals = ["1.1.1.1", "8.8.8.8", "1.0.0.1"];
+        externals.forEach(ip => {
+            const box = document.getElementById("inet-" + ip);
+            if (!box) return;
+            const t = latSummaryCache.find(s => s.ip === ip);
+            const ind = box.querySelector(".inet-indicator");
+            const rttEl = box.querySelector(".inet-rtt");
+            const lossEl = box.querySelector(".inet-loss");
+
+            if (t && t.latest_rtt !== null) {
+                const cls = rttClass(t.latest_rtt, t.loss_pct);
+                rttEl.textContent = t.latest_rtt.toFixed(1) + " ms";
+                rttEl.className = "inet-rtt" + (cls !== "good" ? " " + cls : "");
+                ind.className = "inet-indicator " + cls;
+            } else if (t) {
+                rttEl.textContent = "timeout";
+                rttEl.className = "inet-rtt bad";
+                ind.className = "inet-indicator bad";
+            } else {
+                rttEl.textContent = "--";
+                rttEl.className = "inet-rtt";
+                ind.className = "inet-indicator";
+            }
+            if (t) {
+                lossEl.textContent = t.loss_pct.toFixed(1) + "% loss";
+                lossEl.className = "inet-loss" + (t.loss_pct > 0 ? " has-loss" : "");
+            }
+        });
+    }
+
+    function renderLatDeviceTable() {
+        const tbody = document.getElementById("lat-device-table");
+        // Filter to LAN devices only
+        let devices = latSummaryCache.filter(s => !s.is_external);
+
+        // Sort
+        devices = [...devices].sort((a, b) => {
+            let va = a[latSortCol], vb = b[latSortCol];
+            if (va == null) va = latSortCol === "ip" ? "" : 99999;
+            if (vb == null) vb = latSortCol === "ip" ? "" : 99999;
+            let cmp;
+            if (latSortCol === "ip") {
+                cmp = compareIP(String(va), String(vb));
+            } else if (typeof va === "number") {
+                cmp = va - vb;
+            } else {
+                cmp = String(va).localeCompare(String(vb));
+            }
+            return latSortAsc ? cmp : -cmp;
+        });
+
+        // Look up hostnames from currentDevices
+        const hostMap = {};
+        currentDevices.forEach(d => { hostMap[d.ip] = d.hostname || ""; });
+
+        tbody.innerHTML = devices.map(d => {
+            const cls = rttClass(d.latest_rtt, d.loss_pct);
+            const rttStr = d.latest_rtt !== null ? d.latest_rtt.toFixed(1) : "--";
+            const hostname = hostMap[d.ip] || "-";
+            const selected = d.ip === latSelectedIp ? " selected" : "";
+
+            // Sparkline from history cache
+            const sparks = latSparklines[d.ip] || [];
+            let sparkHtml = "";
+            if (sparks.length > 0) {
+                const maxRtt = Math.max(...sparks.filter(v => v !== null).map(Number), 1);
+                sparkHtml = '<span class="lat-sparkline">' + sparks.map(v => {
+                    if (v === null) return '<span class="lat-spark-bar loss" style="height:18px"></span>';
+                    const h = Math.max(1, Math.round((v / maxRtt) * 18));
+                    return `<span class="lat-spark-bar" style="height:${h}px"></span>`;
+                }).join("") + '</span>';
+            }
+
+            return `<tr class="${selected}" onclick="selectLatDevice('${escapeHtml(d.ip)}')">
+                <td>${escapeHtml(d.ip)}</td>
+                <td>${escapeHtml(hostname)}</td>
+                <td class="lat-rtt-${cls}">${rttStr}</td>
+                <td class="${d.loss_pct > 0 ? 'lat-rtt-bad' : ''}">${d.loss_pct.toFixed(1)}%</td>
+                <td>${sparkHtml}</td>
+            </tr>`;
+        }).join("");
+
+        // Update sort arrows
+        document.querySelectorAll(".lat-table th[data-latcol]").forEach(th => {
+            const arrow = th.querySelector(".arrow");
+            arrow.textContent = th.dataset.latcol === latSortCol ? (latSortAsc ? "\u25B2" : "\u25BC") : "";
+        });
+    }
+
+    document.querySelectorAll(".lat-table th[data-latcol]").forEach(th => {
+        th.addEventListener("click", () => {
+            if (latSortCol === th.dataset.latcol) { latSortAsc = !latSortAsc; }
+            else { latSortCol = th.dataset.latcol; latSortAsc = true; }
+            renderLatDeviceTable();
+        });
+    });
+
+    function selectLatDevice(ip) {
+        latSelectedIp = ip;
+        document.getElementById("lat-detail-ip").textContent = ip;
+        renderLatDeviceTable();
+        fetchLatencyDetail();
+    }
+
+    document.querySelectorAll(".lat-time-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            document.querySelectorAll(".lat-time-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            latMinutes = parseInt(btn.dataset.latmin);
+            if (latSelectedIp) fetchLatencyDetail();
+        });
+    });
+
+    async function fetchLatencyDetail() {
+        if (!latSelectedIp || !latChart) return;
+        try {
+            const resp = await fetch(`/api/latency?ip=${latSelectedIp}&minutes=${latMinutes}`);
+            const data = await resp.json();
+            const history = data.history || [];
+
+            // Update sparkline cache (last 20 readings)
+            const rttVals = history.slice(-20).map(s => s.rtt_ms);
+            latSparklines[latSelectedIp] = rttVals;
+
+            latChart.data.labels = history.map(s => new Date(s.timestamp).toLocaleTimeString());
+            const rttData = history.map(s => s.rtt_ms);
+            latChart.data.datasets[0].data = rttData;
+
+            // Color points: red for loss, green for ok
+            latChart.data.datasets[0].pointBackgroundColor = rttData.map(v =>
+                v === null ? "#cc3333" : "#00cc66"
+            );
+            // Show lost packets as 0 on chart so they appear on x-axis
+            latChart.data.datasets[0].data = rttData.map(v => v === null ? 0 : v);
+            // Use spanGaps to connect across nulls
+            latChart.data.datasets[0].spanGaps = true;
+
+            latChart.update();
+        } catch (e) { console.error("Latency detail error:", e); }
+    }
 
     // --- Init ---
     fetchDevices();

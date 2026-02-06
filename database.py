@@ -47,6 +47,15 @@ def init_db():
             tx_bytes_sec REAL DEFAULT 0
         );
         CREATE INDEX IF NOT EXISTS idx_bw_ts ON bandwidth_samples(timestamp);
+        CREATE TABLE IF NOT EXISTS latency_samples (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT NOT NULL,
+            ip TEXT NOT NULL,
+            rtt_ms REAL,
+            is_external INTEGER DEFAULT 0
+        );
+        CREATE INDEX IF NOT EXISTS idx_lat_ts ON latency_samples(timestamp);
+        CREATE INDEX IF NOT EXISTS idx_lat_ip ON latency_samples(ip);
     """)
 
     # Migrate from devices.json if DB is empty
@@ -201,5 +210,75 @@ def prune_bandwidth(hours=24):
     with _write_lock:
         conn = _connect()
         conn.execute("DELETE FROM bandwidth_samples WHERE timestamp < ?", (cutoff,))
+        conn.commit()
+        conn.close()
+
+
+def add_latency_samples(samples):
+    """Batch insert latency samples: [(ts, ip, rtt_ms, is_external), ...]."""
+    if not samples:
+        return
+    with _write_lock:
+        conn = _connect()
+        conn.executemany(
+            "INSERT INTO latency_samples (timestamp, ip, rtt_ms, is_external) VALUES (?, ?, ?, ?)",
+            samples
+        )
+        conn.commit()
+        conn.close()
+
+
+def get_latency_history(ip, minutes=60):
+    """Return time series for one IP."""
+    cutoff = (datetime.now() - timedelta(minutes=minutes)).isoformat()
+    conn = _connect()
+    rows = conn.execute(
+        "SELECT timestamp, rtt_ms FROM latency_samples "
+        "WHERE ip = ? AND timestamp > ? ORDER BY timestamp ASC",
+        (ip, cutoff)
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def get_latency_summary():
+    """Return latest RTT + packet loss % (last 5 min) for all IPs with data."""
+    cutoff = (datetime.now() - timedelta(minutes=5)).isoformat()
+    conn = _connect()
+    rows = conn.execute(
+        "SELECT ip, is_external, "
+        "COUNT(*) as total, "
+        "SUM(CASE WHEN rtt_ms IS NULL THEN 1 ELSE 0 END) as lost, "
+        "AVG(rtt_ms) as avg_rtt, "
+        "(SELECT rtt_ms FROM latency_samples s2 "
+        " WHERE s2.ip = s1.ip ORDER BY s2.timestamp DESC LIMIT 1) as latest_rtt "
+        "FROM latency_samples s1 "
+        "WHERE timestamp > ? "
+        "GROUP BY ip",
+        (cutoff,)
+    ).fetchall()
+    conn.close()
+    result = []
+    for r in rows:
+        total = r["total"]
+        lost = r["lost"]
+        loss_pct = (lost / total * 100) if total > 0 else 0
+        result.append({
+            "ip": r["ip"],
+            "is_external": bool(r["is_external"]),
+            "latest_rtt": r["latest_rtt"],
+            "avg_rtt": round(r["avg_rtt"], 2) if r["avg_rtt"] is not None else None,
+            "loss_pct": round(loss_pct, 1),
+            "samples": total,
+        })
+    return result
+
+
+def prune_latency(hours=24):
+    """Delete latency samples older than given hours."""
+    cutoff = (datetime.now() - timedelta(hours=hours)).isoformat()
+    with _write_lock:
+        conn = _connect()
+        conn.execute("DELETE FROM latency_samples WHERE timestamp < ?", (cutoff,))
         conn.commit()
         conn.close()
