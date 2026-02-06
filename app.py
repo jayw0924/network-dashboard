@@ -253,4 +253,4 @@ if __name__ == "__main__":
     threading.Thread(target=scan_loop, daemon=True).start()
     threading.Thread(target=bandwidth_loop, daemon=True).start()
     threading.Thread(target=latency_loop, daemon=True).start()
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    app.run(host="0.0.0.0", port=80, debug=False)
