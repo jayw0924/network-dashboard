@@ -250,11 +250,53 @@
         ::-webkit-scrollbar-thumb:hover { background: #333; }
 
         @media (max-width: 768px) {
-            header { flex-direction: column; gap: 0.8rem; }
-            .tabs { padding: 0 1rem; overflow-x: auto; }
-            .tab { padding: 0.5rem 1rem; font-size: 0.7rem; white-space: nowrap; }
-            .tab-content { padding: 1rem; }
-            th, td { padding: 0.4rem 0.5rem; font-size: 0.8rem; }
+            body { font-size: 12px; }
+            header { flex-direction: column; gap: 0.8rem; padding: 0.6rem 1rem; }
+            .summary { gap: 1.2rem; }
+            .stat .value { font-size: 1.1rem; }
+
+            .tabs { padding: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .tabs::-webkit-scrollbar { display: none; }
+            .tab { padding: 0.5rem 0.9rem; font-size: 0.65rem; white-space: nowrap; }
+            .tab-content { padding: 0.8rem; }
+
+            /* Device table — horizontal scroll wrapper */
+            #tab-devices { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            #tab-devices table { min-width: 600px; }
+            th, td { padding: 0.4rem 0.5rem; font-size: 0.75rem; }
+
+            /* Bandwidth */
+            .bw-current { gap: 2rem; }
+            .bw-stat .bw-value { font-size: 1.3rem; }
+            .time-btns { flex-wrap: wrap; }
+            #bw-chart-container { padding: 0.5rem; }
+
+            /* Topology */
+            #network-graph { height: 350px; }
+
+            /* Latency — internet health boxes stack on small screens */
+            .inet-health { flex-direction: column; gap: 0.8rem; }
+            .inet-box { padding: 0.8rem; display: flex; align-items: center; gap: 0.8rem; text-align: left; }
+            .inet-box .inet-indicator { position: static; flex-shrink: 0; }
+            .inet-box .inet-rtt { font-size: 1.2rem; margin-left: auto; }
+            .inet-box .inet-loss { font-size: 0.65rem; margin-top: 0; margin-left: 0.5rem; min-width: 55px; text-align: right; }
+            .inet-box .inet-label { font-size: 0.75rem; margin-bottom: 0; }
+            .inet-box .inet-ip { font-size: 0.65rem; margin-bottom: 0; }
+
+            /* Latency table — horizontal scroll */
+            .lat-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .lat-table table, .lat-table thead, .lat-table tbody { min-width: 450px; }
+            .lat-detail-header { flex-direction: column; gap: 0.5rem; align-items: flex-start; }
+            .lat-time-btns { flex-wrap: wrap; }
+            #lat-chart-container { padding: 0.5rem; }
+
+            /* History */
+            .history-controls { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+            .history-controls select { width: 100%; }
+
+            /* Modal */
+            .modal { padding: 1rem; max-height: 90vh; width: 95%; }
+            .modal table { display: block; overflow-x: auto; }
         }
     </style>
 </head>
