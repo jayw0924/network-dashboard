@@ -1,0 +1,15 @@
+[Unit]
+Description=Network Monitoring Dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/kali/network-dashboard
+ExecStart=/home/kali/network-dashboard/venv/bin/python app.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

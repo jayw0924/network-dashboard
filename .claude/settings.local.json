@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(nmap:*)",
+      "Bash(pip3:*)",
+      "Bash(pip:*)",
+      "Bash(ip route:*)",
+      "Bash(python3 -m venv:*)",
+      "Bash(venv/bin/pip install:*)",
+      "Bash(sudo venv/bin/python:*)",
+      "Bash(curl:*)",
+      "Bash(python3:*)",
+      "Bash(sudo cp:*)",
+      "Bash(sudo systemctl daemon-reload:*)",
+      "Bash(sudo systemctl enable:*)",
+      "Bash(sudo journalctl:*)",
+      "Bash(sudo fuser:*)",
+      "Bash(sudo systemctl restart:*)",
+      "Bash(sudo systemctl status:*)"
+    ]
+  }
+}

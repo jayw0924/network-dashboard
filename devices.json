@@ -1,0 +1,98 @@
+[
+  {
+    "ip": "192.168.12.1",
+    "mac": "94:98:8F:4A:38:41",
+    "hostname": "f5688w.lan",
+    "vendor": "Sagemcom Broadband SAS",
+    "status": "online",
+    "last_seen": "2026-02-06T04:45:55.631949"
+  },
+  {
+    "ip": "192.168.12.103",
+    "mac": "1A:A0:30:32:65:CA",
+    "hostname": "",
+    "vendor": "",
+    "status": "offline",
+    "last_seen": "2026-02-06T04:41:40.716246"
+  },
+  {
+    "ip": "192.168.12.153",
+    "mac": "4C:3B:DF:76:14:02",
+    "hostname": "XBOX.lan",
+    "vendor": "Microsoft",
+    "status": "online",
+    "last_seen": "2026-02-06T04:45:55.631973"
+  },
+  {
+    "ip": "192.168.12.156",
+    "mac": "",
+    "hostname": "nazgul.lan",
+    "vendor": "",
+    "status": "online",
+    "last_seen": "2026-02-06T04:45:55.631978"
+  },
+  {
+    "ip": "192.168.12.170",
+    "mac": "82:15:A0:5B:D3:82",
+    "hostname": "MacBookAir.lan",
+    "vendor": "",
+    "status": "online",
+    "last_seen": "2026-02-06T04:45:55.631983"
+  },
+  {
+    "ip": "192.168.12.174",
+    "mac": "F2:95:95:D3:1D:6E",
+    "hostname": "iPhone.lan",
+    "vendor": "",
+    "status": "online",
+    "last_seen": "2026-02-06T04:45:55.631987"
+  },
+  {
+    "ip": "192.168.12.225",
+    "mac": "28:AD:18:76:93:02",
+    "hostname": "40TCLRokuTV.lan",
+    "vendor": "Hui Zhou Gaoshengda Technology",
+    "status": "online",
+    "last_seen": "2026-02-06T04:45:55.633797"
+  },
+  {
+    "ip": "192.168.12.25",
+    "mac": "D8:E0:E1:0D:EB:5A",
+    "hostname": "Samsung.lan",
+    "vendor": "Samsung Electronics",
+    "status": "online",
+    "last_seen": "2026-02-06T04:45:55.633803"
+  },
+  {
+    "ip": "192.168.12.61",
+    "mac": "88:DE:A9:BA:2B:91",
+    "hostname": "RokuPlayer.lan",
+    "vendor": "Roku",
+    "status": "online",
+    "last_seen": "2026-02-06T04:45:55.633809"
+  },
+  {
+    "ip": "192.168.12.69",
+    "mac": "D4:F5:47:53:16:19",
+    "hostname": "Google-Home-Mini.lan",
+    "vendor": "Google",
+    "status": "online",
+    "last_seen": "2026-02-06T04:45:55.633814"
+  },
+  {
+    "ip": "192.168.12.71",
+    "mac": "C4:98:5C:6E:F5:10",
+    "hostname": "55TCLRokuTV.lan",
+    "vendor": "Hui Zhou Gaoshengda Technology",
+    "status": "offline",
+    "last_seen": "2026-02-06T04:37:27.363625"
+  },
+  {
+    "ip": "192.168.12.177",
+    "mac": "C6:7F:6A:16:79:26",
+    "hostname": "",
+    "vendor": "",
+    "status": "online",
+    "last_seen": "2026-02-06T04:45:55.633774"
+  }
+]

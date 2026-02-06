@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+        header {
+            background: #16213e;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #0f3460;
+        }
+        header h1 { font-size: 1.4rem; color: #e94560; }
+        .summary { display: flex; gap: 2rem; align-items: center; }
+        .stat { text-align: center; }
+        .stat .value { font-size: 1.5rem; font-weight: bold; color: #e94560; }
+        .stat .label { font-size: 0.75rem; color: #888; text-transform: uppercase; }
+        .scan-btn {
+            background: #e94560; color: #fff; border: none;
+            padding: 0.5rem 1.2rem; border-radius: 4px; cursor: pointer;
+            font-size: 0.9rem; transition: background 0.2s;
+        }
+        .scan-btn:hover { background: #c73650; }
+        .scan-btn:disabled { background: #555; cursor: not-allowed; }
+
+        /* Tabs */
+        .tabs {
+            display: flex; background: #16213e;
+            border-bottom: 2px solid #0f3460;
+            padding: 0 2rem;
+        }
+        .tab {
+            padding: 0.7rem 1.5rem; cursor: pointer;
+            color: #888; font-size: 0.9rem; border-bottom: 2px solid transparent;
+            margin-bottom: -2px; transition: all 0.2s; user-select: none;
+        }
+        .tab:hover { color: #e0e0e0; }
+        .tab.active { color: #e94560; border-bottom-color: #e94560; }
+        .tab-content { display: none; padding: 1.5rem 2rem; }
+        .tab-content.active { display: block; }
+
+        .scanning-bar {
+            background: #0f3460; padding: 0.5rem 1rem; border-radius: 4px;
+            margin-bottom: 1rem; display: none; animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        /* Device table */
+        table {
+            width: 100%; border-collapse: collapse;
+            background: #16213e; border-radius: 8px; overflow: hidden;
+        }
+        th, td {
+            padding: 0.7rem 1rem; text-align: left;
+            border-bottom: 1px solid #0f3460;
+        }
+        th {
+            background: #0f3460; cursor: pointer; user-select: none;
+            white-space: nowrap; font-size: 0.85rem;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        th:hover { background: #1a4080; }
+        th .arrow { margin-left: 4px; font-size: 0.7rem; }
+        tr:hover td { background: #1a2744; }
+        .status-dot {
+            display: inline-block; width: 10px; height: 10px;
+            border-radius: 50%; margin-right: 6px; vertical-align: middle;
+        }
+        .status-online { background: #4caf50; box-shadow: 0 0 6px #4caf5088; }
+        .status-offline { background: #f44336; box-shadow: 0 0 6px #f4433688; }
+        .empty-msg { text-align: center; padding: 3rem; color: #666; }
+
+        /* Port badge & button */
+        .port-badge {
+            background: #0f3460; color: #4caf50; padding: 2px 8px;
+            border-radius: 10px; font-size: 0.8rem; cursor: pointer;
+        }
+        .port-badge:hover { background: #1a4080; }
+        .port-scan-btn {
+            background: transparent; border: 1px solid #555; color: #888;
+            padding: 2px 8px; border-radius: 10px; font-size: 0.75rem;
+            cursor: pointer;
+        }
+        .port-scan-btn:hover { border-color: #e94560; color: #e94560; }
+        .port-scanning { color: #e9a045; font-size: 0.8rem; }
+
+        /* Modal */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%; background: rgba(0,0,0,0.7);
+            z-index: 1000; justify-content: center; align-items: center;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: #16213e; border-radius: 8px; padding: 1.5rem;
+            max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;
+            border: 1px solid #0f3460;
+        }
+        .modal h2 { color: #e94560; margin-bottom: 1rem; font-size: 1.1rem; }
+        .modal table { font-size: 0.85rem; }
+        .modal-close {
+            float: right; background: none; border: none;
+            color: #888; font-size: 1.3rem; cursor: pointer;
+        }
+        .modal-close:hover { color: #e94560; }
+
+        /* Bandwidth */
+        .bw-current {
+            display: flex; gap: 3rem; margin-bottom: 1.5rem;
+            justify-content: center;
+        }
+        .bw-stat { text-align: center; }
+        .bw-stat .bw-value { font-size: 2rem; font-weight: bold; }
+        .bw-stat .bw-label { font-size: 0.8rem; color: #888; text-transform: uppercase; }
+        .bw-rx .bw-value { color: #4caf50; }
+        .bw-tx .bw-value { color: #42a5f5; }
+        .time-btns { display: flex; gap: 0.5rem; margin-bottom: 1rem; justify-content: center; }
+        .time-btn {
+            background: #0f3460; color: #888; border: none;
+            padding: 0.4rem 1rem; border-radius: 4px; cursor: pointer;
+        }
+        .time-btn:hover, .time-btn.active { background: #e94560; color: #fff; }
+        #bw-chart-container { background: #16213e; border-radius: 8px; padding: 1rem; }
+
+        /* Network graph */
+        #network-graph {
+            width: 100%; height: 500px; background: #16213e;
+            border-radius: 8px; border: 1px solid #0f3460;
+        }
+
+        /* History timeline */
+        .history-controls { margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: center; }
+        .history-controls select {
+            background: #0f3460; color: #e0e0e0; border: 1px solid #1a4080;
+            padding: 0.4rem 0.8rem; border-radius: 4px;
+        }
+        .timeline { position: relative; padding-left: 30px; }
+        .timeline::before {
+            content: ''; position: absolute; left: 10px; top: 0;
+            bottom: 0; width: 2px; background: #0f3460;
+        }
+        .timeline-item {
+            position: relative; margin-bottom: 1rem;
+            padding: 0.8rem 1rem; background: #16213e;
+            border-radius: 6px; border: 1px solid #0f3460;
+        }
+        .timeline-item::before {
+            content: ''; position: absolute; left: -24px; top: 1rem;
+            width: 10px; height: 10px; border-radius: 50%;
+        }
+        .timeline-item.connected::before { background: #4caf50; box-shadow: 0 0 6px #4caf5088; }
+        .timeline-item.disconnected::before { background: #f44336; box-shadow: 0 0 6px #f4433688; }
+        .timeline-item .ev-time { color: #888; font-size: 0.8rem; }
+        .timeline-item .ev-desc { margin-top: 0.3rem; }
+        .timeline-item .ev-ip { color: #e94560; }
+        .load-more-btn {
+            display: block; margin: 1rem auto; background: #0f3460;
+            color: #e0e0e0; border: none; padding: 0.5rem 2rem;
+            border-radius: 4px; cursor: pointer;
+        }
+        .load-more-btn:hover { background: #1a4080; }
+
+        @media (max-width: 768px) {
+            header { flex-direction: column; gap: 0.8rem; }
+            .tabs { padding: 0 1rem; overflow-x: auto; }
+            .tab { padding: 0.6rem 1rem; font-size: 0.8rem; white-space: nowrap; }
+            .tab-content { padding: 1rem; }
+            th, td { padding: 0.5rem; font-size: 0.85rem; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Network Dashboard</h1>
+        <div class="summary">
+            <div class="stat">
+                <div class="value" id="total-count">0</div>
+                <div class="label">Total</div>
+            </div>
+            <div class="stat">
+                <div class="value" id="online-count">0</div>
+                <div class="label">Online</div>
+            </div>
+            <div class="stat">
+                <div class="value" id="offline-count">0</div>
+                <div class="label">Offline</div>
+            </div>
+            <button class="scan-btn" id="scan-btn" onclick="triggerScan()">Scan Now</button>
+        </div>
+    </header>
+
+    <div class="tabs">
+        <div class="tab active" data-tab="devices">Devices</div>
+        <div class="tab" data-tab="netmap">Network Map</div>
+        <div class="tab" data-tab="bandwidth">Bandwidth</div>
+        <div class="tab" data-tab="history">History</div>
+    </div>
+
+    <!-- Devices Tab -->
+    <div class="tab-content active" id="tab-devices">
+        <div class="scanning-bar" id="scanning-bar">Scanning network...</div>
+        <table>
+            <thead>
+                <tr>
+                    <th data-col="status" data-type="string">Status <span class="arrow"></span></th>
+                    <th data-col="ip" data-type="ip">IP Address <span class="arrow"></span></th>
+                    <th data-col="hostname" data-type="string">Hostname <span class="arrow"></span></th>
+                    <th data-col="mac" data-type="string">MAC <span class="arrow"></span></th>
+                    <th data-col="vendor" data-type="string">Vendor <span class="arrow"></span></th>
+                    <th data-col="last_seen" data-type="string">Last Seen <span class="arrow"></span></th>
+                    <th>Ports</th>
+                </tr>
+            </thead>
+            <tbody id="device-table"></tbody>
+        </table>
+        <div class="empty-msg" id="empty-msg">Waiting for first scan...</div>
+    </div>
+
+    <!-- Network Map Tab -->
+    <div class="tab-content" id="tab-netmap">
+        <div id="network-graph"></div>
+    </div>
+
+    <!-- Bandwidth Tab -->
+    <div class="tab-content" id="tab-bandwidth">
+        <div class="bw-current">
+            <div class="bw-stat bw-rx">
+                <div class="bw-value" id="bw-rx-val">--</div>
+                <div class="bw-label">Download</div>
+            </div>
+            <div class="bw-stat bw-tx">
+                <div class="bw-value" id="bw-tx-val">--</div>
+                <div class="bw-label">Upload</div>
+            </div>
+        </div>
+        <div class="time-btns">
+            <button class="time-btn" data-minutes="5">5m</button>
+            <button class="time-btn" data-minutes="15">15m</button>
+            <button class="time-btn active" data-minutes="60">1h</button>
+            <button class="time-btn" data-minutes="1440">24h</button>
+        </div>
+        <div id="bw-chart-container">
+            <canvas id="bw-chart"></canvas>
+        </div>
+    </div>
+
+    <!-- History Tab -->
+    <div class="tab-content" id="tab-history">
+        <div class="history-controls">
+            <label>Filter by device:</label>
+            <select id="history-filter">
+                <option value="">All devices</option>
+            </select>
+        </div>
+        <div class="timeline" id="timeline"></div>
+        <button class="load-more-btn" id="load-more-btn" onclick="loadMoreHistory()">Load more</button>
+    </div>
+
+    <!-- Port Details Modal -->
+    <div class="modal-overlay" id="port-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closePortModal()">&times;</button>
+            <h2 id="modal-title">Port Details</h2>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <script>
+    // --- State ---
+    let currentDevices = [];
+    let sortCol = "ip";
+    let sortAsc = true;
+    let bwChart = null;
+    let bwMinutes = 60;
+    let bwInterval = null;
+    let graphNetwork = null;
+    let graphInterval = null;
+    let graphInitialized = false;
+    let chartInitialized = false;
+    let historyOffset = 0;
+    const HISTORY_LIMIT = 50;
+
+    // --- Tabs ---
+    document.querySelectorAll(".tab").forEach(tab => {
+        tab.addEventListener("click", () => {
+            document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+            document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+            tab.classList.add("active");
+            document.getElementById("tab-" + tab.dataset.tab).classList.add("active");
+
+            if (tab.dataset.tab === "netmap") initGraph();
+            if (tab.dataset.tab === "bandwidth") initBandwidth();
+            if (tab.dataset.tab === "history") { historyOffset = 0; loadHistory(true); }
+        });
+    });
+
+    // --- Utilities ---
+    function compareIP(a, b) {
+        const pa = a.split(".").map(Number);
+        const pb = b.split(".").map(Number);
+        for (let i = 0; i < 4; i++) {
+            if (pa[i] !== pb[i]) return pa[i] - pb[i];
+        }
+        return 0;
+    }
+
+    function sortDevices(devices) {
+        return [...devices].sort((a, b) => {
+            let va = a[sortCol] || "";
+            let vb = b[sortCol] || "";
+            let cmp = sortCol === "ip" ? compareIP(va, vb) : va.localeCompare(vb);
+            return sortAsc ? cmp : -cmp;
+        });
+    }
+
+    function formatTime(iso) {
+        if (!iso) return "";
+        return new Date(iso).toLocaleString();
+    }
+
+    function formatBytes(bytes) {
+        if (bytes == null || isNaN(bytes)) return "--";
+        if (bytes < 1024) return bytes.toFixed(0) + " B/s";
+        if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB/s";
+        return (bytes / 1048576).toFixed(2) + " MB/s";
+    }
+
+    function escapeHtml(s) {
+        const div = document.createElement("div");
+        div.textContent = s;
+        return div.innerHTML;
+    }
+
+    // --- Device Table ---
+    function renderDevices() {
+        const tbody = document.getElementById("device-table");
+        const sorted = sortDevices(currentDevices);
+        const online = currentDevices.filter(d => d.status === "online").length;
+
+        document.getElementById("total-count").textContent = currentDevices.length;
+        document.getElementById("online-count").textContent = online;
+        document.getElementById("offline-count").textContent = currentDevices.length - online;
+        document.getElementById("empty-msg").style.display = currentDevices.length ? "none" : "block";
+
+        tbody.innerHTML = sorted.map(d => {
+            let portCell;
+            const ports = d.ports || [];
+            const openPorts = ports.filter(p => p.state === "open");
+            if (openPorts.length > 0) {
+                portCell = `<span class="port-badge" onclick="showPorts('${escapeHtml(d.ip)}')">${openPorts.length} open</span>`;
+            } else if (ports.length > 0) {
+                portCell = `<span class="port-badge" onclick="showPorts('${escapeHtml(d.ip)}')">0 open</span>`;
+            } else {
+                portCell = `<button class="port-scan-btn" onclick="startPortScan('${escapeHtml(d.ip)}')">Scan</button>`;
+            }
+            return `<tr>
+                <td><span class="status-dot status-${d.status}"></span>${d.status}</td>
+                <td>${escapeHtml(d.ip)}</td>
+                <td>${escapeHtml(d.hostname || "-")}</td>
+                <td>${escapeHtml(d.mac || "-")}</td>
+                <td>${escapeHtml(d.vendor || "-")}</td>
+                <td>${formatTime(d.last_seen)}</td>
+                <td>${portCell}</td>
+            </tr>`;
+        }).join("");
+
+        document.querySelectorAll("#tab-devices th[data-col]").forEach(th => {
+            const arrow = th.querySelector(".arrow");
+            arrow.textContent = th.dataset.col === sortCol ? (sortAsc ? "\u25B2" : "\u25BC") : "";
+        });
+    }
+
+    document.querySelectorAll("#tab-devices th[data-col]").forEach(th => {
+        th.addEventListener("click", () => {
+            if (sortCol === th.dataset.col) { sortAsc = !sortAsc; }
+            else { sortCol = th.dataset.col; sortAsc = true; }
+            renderDevices();
+        });
+    });
+
+    async function fetchDevices() {
+        try {
+            const resp = await fetch("/api/devices");
+            const data = await resp.json();
+            currentDevices = data.devices;
+            document.getElementById("scanning-bar").style.display = data.scanning ? "block" : "none";
+            renderDevices();
+        } catch (e) { console.error("Fetch error:", e); }
+    }
+
+    async function triggerScan() {
+        const btn = document.getElementById("scan-btn");
+        btn.disabled = true;
+        try { await fetch("/api/scan", { method: "POST" }); }
+        catch (e) { console.error("Scan trigger error:", e); }
+        setTimeout(() => { btn.disabled = false; }, 3000);
+    }
+
+    // --- Port Scanning ---
+    async function startPortScan(ip) {
+        try {
+            const resp = await fetch(`/api/portscan/${ip}`, { method: "POST" });
+            if (resp.status === 409) {
+                alert("Another port scan is already running. Please wait.");
+                return;
+            }
+            // Replace button with scanning indicator
+            renderDevices();
+            pollPortScan(ip);
+        } catch (e) { console.error("Port scan error:", e); }
+    }
+
+    function pollPortScan(ip) {
+        const poll = setInterval(async () => {
+            try {
+                const resp = await fetch(`/api/portscan/${ip}`);
+                const data = await resp.json();
+                if (!data.scanning) {
+                    clearInterval(poll);
+                    // Update local device data
+                    const dev = currentDevices.find(d => d.ip === ip);
+                    if (dev) dev.ports = data.ports;
+                    renderDevices();
+                }
+            } catch (e) { clearInterval(poll); }
+        }, 2000);
+    }
+
+    function showPorts(ip) {
+        const dev = currentDevices.find(d => d.ip === ip);
+        if (!dev) return;
+        document.getElementById("modal-title").textContent = `Ports — ${ip} (${dev.hostname || "unknown"})`;
+        const ports = dev.ports || [];
+        let html;
+        if (ports.length === 0) {
+            html = "<p>No ports scanned yet.</p>";
+        } else {
+            const openPorts = ports.filter(p => p.state === "open");
+            html = `<p>${openPorts.length} open port(s) found</p>
+            <table><thead><tr><th>Port</th><th>Protocol</th><th>Service</th><th>Version</th><th>State</th></tr></thead><tbody>`;
+            html += ports.map(p => `<tr>
+                <td>${p.port}</td><td>${escapeHtml(p.protocol)}</td>
+                <td>${escapeHtml(p.service)}</td><td>${escapeHtml(p.version || "-")}</td>
+                <td>${escapeHtml(p.state)}</td>
+            </tr>`).join("");
+            html += `</tbody></table>`;
+        }
+        html += `<br><button class="scan-btn" onclick="closePortModal(); startPortScan('${escapeHtml(ip)}')">Re-scan</button>`;
+        document.getElementById("modal-body").innerHTML = html;
+        document.getElementById("port-modal").classList.add("show");
+    }
+
+    function closePortModal() {
+        document.getElementById("port-modal").classList.remove("show");
+    }
+
+    document.getElementById("port-modal").addEventListener("click", e => {
+        if (e.target === e.currentTarget) closePortModal();
+    });
+
+    // --- Bandwidth ---
+    function initBandwidth() {
+        if (chartInitialized) { fetchBandwidth(); return; }
+        chartInitialized = true;
+        const script = document.createElement("script");
+        script.src = "https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js";
+        script.onload = () => {
+            const ctx = document.getElementById("bw-chart").getContext("2d");
+            bwChart = new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: [],
+                    datasets: [
+                        { label: "Download", data: [], borderColor: "#4caf50", backgroundColor: "rgba(76,175,80,0.1)", fill: true, tension: 0.3, pointRadius: 0 },
+                        { label: "Upload", data: [], borderColor: "#42a5f5", backgroundColor: "rgba(66,165,245,0.1)", fill: true, tension: 0.3, pointRadius: 0 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    animation: false,
+                    interaction: { intersect: false, mode: "index" },
+                    scales: {
+                        x: { ticks: { color: "#888", maxTicksLimit: 10 }, grid: { color: "#0f3460" } },
+                        y: {
+                            ticks: {
+                                color: "#888",
+                                callback: v => formatBytes(v)
+                            },
+                            grid: { color: "#0f3460" }
+                        }
+                    },
+                    plugins: {
+                        legend: { labels: { color: "#e0e0e0" } },
+                        tooltip: {
+                            callbacks: { label: ctx => ctx.dataset.label + ": " + formatBytes(ctx.raw) }
+                        }
+                    }
+                }
+            });
+            fetchBandwidth();
+            if (bwInterval) clearInterval(bwInterval);
+            bwInterval = setInterval(fetchBandwidth, 5000);
+        };
+        document.head.appendChild(script);
+    }
+
+    document.querySelectorAll(".time-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            document.querySelectorAll(".time-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            bwMinutes = parseInt(btn.dataset.minutes);
+            fetchBandwidth();
+        });
+    });
+
+    async function fetchBandwidth() {
+        try {
+            const resp = await fetch(`/api/bandwidth?minutes=${bwMinutes}`);
+            const data = await resp.json();
+            if (data.current) {
+                document.getElementById("bw-rx-val").textContent = formatBytes(data.current.rx_bytes_sec);
+                document.getElementById("bw-tx-val").textContent = formatBytes(data.current.tx_bytes_sec);
+            }
+            if (bwChart && data.history) {
+                bwChart.data.labels = data.history.map(s => {
+                    const d = new Date(s.timestamp);
+                    return d.toLocaleTimeString();
+                });
+                bwChart.data.datasets[0].data = data.history.map(s => s.rx_bytes_sec);
+                bwChart.data.datasets[1].data = data.history.map(s => s.tx_bytes_sec);
+                bwChart.update();
+            }
+        } catch (e) { console.error("Bandwidth fetch error:", e); }
+    }
+
+    // --- Network Graph ---
+    function initGraph() {
+        if (graphInitialized) { fetchTopology(); return; }
+        graphInitialized = true;
+        const script = document.createElement("script");
+        script.src = "https://cdn.jsdelivr.net/npm/vis-network@9/dist/vis-network.min.js";
+        script.onload = () => {
+            const container = document.getElementById("network-graph");
+            const data = { nodes: new vis.DataSet(), edges: new vis.DataSet() };
+            const options = {
+                physics: { stabilization: { iterations: 100 }, barnesHut: { gravitationalConstant: -3000 } },
+                groups: {
+                    router: { shape: "diamond", color: { background: "#ffd700", border: "#daa520" }, size: 30, font: { color: "#e0e0e0", size: 12 } },
+                    online: { shape: "dot", color: { background: "#4caf50", border: "#388e3c" }, size: 15, font: { color: "#e0e0e0", size: 11 } },
+                    offline: { shape: "dot", color: { background: "#f44336", border: "#c62828" }, size: 12, font: { color: "#666", size: 11 }, opacity: 0.5 }
+                },
+                edges: { color: { color: "#0f3460", highlight: "#e94560" }, width: 1 },
+                interaction: { hover: true }
+            };
+            graphNetwork = new vis.Network(container, data, options);
+            graphNetwork.on("stabilizationIterationsDone", () => {
+                graphNetwork.setOptions({ physics: false });
+            });
+            fetchTopology();
+            if (graphInterval) clearInterval(graphInterval);
+            graphInterval = setInterval(fetchTopology, 10000);
+        };
+        document.head.appendChild(script);
+    }
+
+    async function fetchTopology() {
+        if (!graphNetwork) return;
+        try {
+            const resp = await fetch("/api/topology");
+            const data = await resp.json();
+            const nodeDS = graphNetwork.body.data.nodes;
+            const edgeDS = graphNetwork.body.data.edges;
+
+            // Preserve positions of existing nodes
+            const positions = graphNetwork.getPositions();
+
+            const newNodeIds = new Set(data.nodes.map(n => n.id));
+            const newEdgeIds = new Set(data.edges.map(e => e.from + "-" + e.to));
+
+            // Remove old nodes/edges
+            nodeDS.getIds().forEach(id => { if (!newNodeIds.has(id)) nodeDS.remove(id); });
+            edgeDS.getIds().forEach(id => { if (!newEdgeIds.has(id)) edgeDS.remove(id); });
+
+            // Add/update nodes
+            data.nodes.forEach(n => {
+                const existing = nodeDS.get(n.id);
+                const pos = positions[n.id];
+                const node = { id: n.id, label: n.label, group: n.group };
+                if (pos) { node.x = pos.x; node.y = pos.y; }
+                if (existing) { nodeDS.update(node); }
+                else { nodeDS.add(node); }
+            });
+
+            // Add new edges
+            data.edges.forEach(e => {
+                const eid = e.from + "-" + e.to;
+                if (!edgeDS.get(eid)) {
+                    edgeDS.add({ id: eid, from: e.from, to: e.to });
+                }
+            });
+        } catch (e) { console.error("Topology fetch error:", e); }
+    }
+
+    // --- History ---
+    async function loadHistory(reset) {
+        if (reset) {
+            historyOffset = 0;
+            document.getElementById("timeline").innerHTML = "";
+            await populateHistoryFilter();
+        }
+        const ip = document.getElementById("history-filter").value;
+        try {
+            const url = `/api/history?limit=${HISTORY_LIMIT}&offset=${historyOffset}` + (ip ? `&ip=${ip}` : "");
+            const resp = await fetch(url);
+            const data = await resp.json();
+            const timeline = document.getElementById("timeline");
+
+            data.events.forEach(ev => {
+                const item = document.createElement("div");
+                item.className = `timeline-item ${ev.event_type}`;
+                const label = ev.event_type === "connected" ? "came online" : "went offline";
+                item.innerHTML = `
+                    <div class="ev-time">${formatTime(ev.timestamp)}</div>
+                    <div class="ev-desc">
+                        <span class="ev-ip">${escapeHtml(ev.ip)}</span>
+                        ${ev.hostname ? "(" + escapeHtml(ev.hostname) + ")" : ""}
+                        ${label}
+                    </div>`;
+                timeline.appendChild(item);
+            });
+
+            historyOffset += data.events.length;
+            document.getElementById("load-more-btn").style.display =
+                data.events.length < HISTORY_LIMIT ? "none" : "block";
+        } catch (e) { console.error("History fetch error:", e); }
+    }
+
+    function loadMoreHistory() { loadHistory(false); }
+
+    async function populateHistoryFilter() {
+        const sel = document.getElementById("history-filter");
+        const current = sel.value;
+        sel.innerHTML = '<option value="">All devices</option>';
+        currentDevices.forEach(d => {
+            const opt = document.createElement("option");
+            opt.value = d.ip;
+            opt.textContent = d.ip + (d.hostname ? ` (${d.hostname})` : "");
+            sel.appendChild(opt);
+        });
+        sel.value = current;
+    }
+
+    document.getElementById("history-filter").addEventListener("change", () => loadHistory(true));
+
+    // --- Init ---
+    fetchDevices();
+    setInterval(fetchDevices, 10000);
+    </script>
+</body>
+</html>
